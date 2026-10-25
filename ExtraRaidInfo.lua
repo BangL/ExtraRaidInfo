@@ -2,7 +2,7 @@ ExtraRaidInfo = ExtraRaidInfo or {}
 
 if not ExtraRaidInfo.setup then
     ExtraRaidInfo.setup = true
-    ExtraRaidInfo.VERSION = "0.2.0"
+    ExtraRaidInfo.VERSION = "0.2.1"
     ExtraRaidInfo._path = ModPath
     ExtraRaidInfo._config_path = SavePath .. "ExtraRaidInfo.json"
     ExtraRaidInfo._config = {}

@@ -51,6 +51,21 @@ function ElementHooks:Install()
         end
     end)
 
+    -- objectives show and hide the markers of the level data
+    if ElementObjective then
+        wrap(ElementObjective, "on_executed", function(original)
+            return function(self, ...)
+                local ret = original(self, ...)
+
+                if Network:is_server() then
+                    report(ExtraRaidInfo.Mission.OnObjective, self)
+                end
+
+                return ret
+            end
+        end)
+    end
+
     -- every delayed execution of a follow-up element goes through here
     wrap(script_element, "_calc_element_delay", function(original)
         return function(self, params)
@@ -100,7 +115,7 @@ function ElementHooks:Install()
             return function(self, ...)
                 local ret = original(self, ...)
 
-                report(ExtraRaidInfo.Mission.OnCounter, self)
+                report(ExtraRaidInfo.Mission.OnCounter, self, name)
 
                 return ret
             end

@@ -25,7 +25,7 @@ a client only sees the loot tracker.
 return {
     counters = { [700135] = { text_id = "extraraidinfo_flakturm_shells", label = "Shells loaded" } },
     timers   = { [100195] = { text_id = "...", label = "Gate opens" } },
-    delays   = { [100018] = false }, -- false hides a delay
+    delays   = { [100018] = false, [100019] = { label = "Truck arrives", waypoint = false } }, -- false hides a delay, waypoint = false: no waypoint, waypoint_pos = { x, y, z }: the waypoint goes there, waypoint_unit = <editor unit id>: it follows that unit, icon = <gui icon id>: icon next to the label
 }
 ```
 

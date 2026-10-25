@@ -85,6 +85,24 @@ local function objective_title(element)
     end
 end
 
+-- Where the waypoint of a delay goes (level data): `waypoint = false` none, `waypoint_pos = { x, y, z }` that spot,
+-- `waypoint_unit` is handled by the waypoint itself (it follows the unit), otherwise the position of the target element.
+function Mission:WaypointPosition(entry, target)
+    if entry and entry.waypoint == false then
+        return nil
+    end
+
+    if entry and entry.waypoint_pos then
+        return Vector3(unpack(entry.waypoint_pos))
+    end
+
+    if entry and entry.waypoint_unit then
+        return nil
+    end
+
+    return target._values.position
+end
+
 -- Called whenever `source` schedules `target` to execute after `delay` seconds.
 function Mission:OnDelay(source, target_id, delay)
     if not ExtraRaidInfo:GetOption("show_delays") or delay < ExtraRaidInfo:GetOption("min_delay") or delay > 1800 then
@@ -113,10 +131,80 @@ function Mission:OnDelay(source, target_id, delay)
 
     ExtraRaidInfo.Trackers:AddTimer("delay_" .. tostring(source._sync_id) .. "_" .. tostring(target_id), label, delay, {
         color = entry and entry.color,
-        position = target._values.position,
+        position = self:WaypointPosition(entry, target),
+        unit_id = entry and entry.waypoint_unit,
+        unit_sync = source._sync_id,
+        icon = entry and entry.icon or "waypoint_special_wait",
         category = "delays",
         text_id = entry and entry.text_id,
     })
+end
+
+-- Markers -----------------------------------------------------------------------------------
+
+local function contains(list, id)
+    for _, entry in ipairs(list or {}) do
+        if entry == id then
+            return true
+        end
+    end
+
+    return false
+end
+
+-- World position of a marker: the instance point that actually spawned its instance (points) plus the offset
+-- inside that instance, or a fixed position.
+function Mission:MarkerPosition(marker, element)
+    for _, point_id in ipairs(marker.points or {}) do
+        local point = element:get_mission_element(point_id)
+
+        if point and point._has_created then
+            -- not point:get_orientation(): on the host that logs the call for the clients and changes what they get
+            local source = point
+            local index = point._last_orientation_index
+
+            if index and index ~= 0 and point._values.orientation_elements then
+                source = point:get_mission_element(point._values.orientation_elements[index]) or point
+            end
+
+            local position, rotation = source._values.position, source._values.rotation
+            local offset = Vector3(unpack(marker.offset or { 0, 0, 0 }))
+
+            mvector3.rotate_with(offset, rotation)
+
+            return position + offset
+        end
+    end
+
+    return marker.position and Vector3(unpack(marker.position)) or nil
+end
+
+-- Level data `waypoints`: { id, label, text_id, icon, start = { objective element ids }, stop = { ... },
+-- points = { instance point ids }, offset = { x, y, z } or position = { x, y, z } }. The marker is shown while an
+-- objective that starts it is active.
+function Mission:OnObjective(element)
+    if not ExtraRaidInfo:GetOption("show_waypoints") then
+        return
+    end
+
+    for index, marker in ipairs(self:Data().waypoints or {}) do
+        local id = "marker_" .. tostring(element._sync_id or 0) .. "_" .. tostring(marker.id or index)
+
+        if contains(marker.stop, element._id) then
+            ExtraRaidInfo.Trackers:Remove(id)
+        elseif contains(marker.start, element._id) then
+            local position = self:MarkerPosition(marker, element)
+
+            if position then
+                ExtraRaidInfo.Trackers:AddInfo(id, ExtraRaidInfo:Localize(marker.text_id, marker.label) or marker.label, "", {
+                    position = position,
+                    category = "waypoints",
+                    text_id = marker.text_id,
+                    icon = marker.icon,
+                })
+            end
+        end
+    end
 end
 
 -- Timers ------------------------------------------------------------------------------------
@@ -166,13 +254,13 @@ function Mission:OnTimer(element, op)
         return
     end
 
-    trackers:AddTimer(id, label, time, { element = element, category = "timers", text_id = entry and entry.text_id })
+    trackers:AddTimer(id, label, time, { element = element, category = "timers", text_id = entry and entry.text_id, icon = entry and entry.icon or "waypoint_special_wait" })
 end
 
 -- Counters ----------------------------------------------------------------------------------
 
 -- Only curated counters are shown: the unnamed ones are plain logic glue.
-function Mission:OnCounter(element)
+function Mission:OnCounter(element, op)
     if not ExtraRaidInfo:GetOption("show_counters") then
         return
     end
@@ -183,18 +271,27 @@ function Mission:OnCounter(element)
         return
     end
 
-    local max = entry.max or element._original_value
     local remaining = element._values.counter_target
+
+    -- The total is not the value the element starts with: the mission sets it per difficulty (gold_rush bags 3 -> 16)
+    -- and adds to it. A set/reset starts over, everything else only ever raises it.
+    if op == "counter_operation_set" or op == "counter_operation_reset" or op == "reset_counter_target" then
+        element._extraraidinfo_max = remaining
+    else
+        element._extraraidinfo_max = math.max(element._extraraidinfo_max or element._original_value, remaining)
+    end
+
+    local max = entry.max or element._extraraidinfo_max
     local current = entry.remaining and remaining or (max - remaining)
     local id = "counter_" .. tostring(element._sync_id or 0) .. "_" .. tostring(element._id)
     local trackers = ExtraRaidInfo.Trackers
     local tracker = trackers:Get(id)
 
     if not tracker then
-        tracker = trackers:AddCounter(id, label, current, entry.remaining and nil or max, { color = entry.color, category = "counters", text_id = entry.text_id })
+        tracker = trackers:AddCounter(id, label, current, entry.remaining and nil or max, { color = entry.color, category = "counters", text_id = entry.text_id, icon = entry.icon })
         tracker.done_keep = entry.keep
     else
-        trackers:SetCount(id, current)
+        trackers:SetCount(id, current, not entry.remaining and max or nil)
     end
 
     -- finished counters leave the HUD after a moment

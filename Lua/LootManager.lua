@@ -14,6 +14,6 @@ Hooks:PostHook(LootManager, "sync_secure_loot", "ExtraRaidInfo_LootManager_post_
     if trackers:Get("loot") then
         trackers:SetCount("loot", count)
     else
-        trackers:AddCounter("loot", ExtraRaidInfo:Localize("extraraidinfo_loot", "Loot secured"), count)
+        trackers:AddCounter("loot", ExtraRaidInfo:Localize("extraraidinfo_loot", "Loot secured"), count, nil, { icon = "waypoint_special_loot" })
     end
 end)

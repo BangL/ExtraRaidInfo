@@ -4,8 +4,9 @@
 -- Messages go through LuaNetworking (id "ExtraRaidInfo"), fields are separated by "|":
 --   client -> host   H|protocol                          hello, the host starts sending to this peer
 --   host -> client   K                                    ack of the hello
---   host -> client   T|id|category|label|text_id|time|total|paused|x,y,z|color|keep     add a timer
---                    N|id|category|label|text_id|current|max|color                      add a counter
+--   host -> client   T|id|category|label|text_id|time|total|paused|x,y,z|color|keep|unit_id|unit_sync|icon     add a timer
+--                    N|id|category|label|text_id|current|max|color|icon                      add a counter
+--                    M|id|category|label|text_id|icon|x,y,z                           add a marker (info with a waypoint)
 --                    U|id|time|restart_total   P|id|paused   S|id|current|max   R|id   X (clear)
 -- Loot is not synced: every client gets sync_secure_loot itself.
 
@@ -24,6 +25,7 @@ Net.peers = Net.peers or {}
 
 -- option that switches a tracker category off on the receiving side
 Net.CATEGORY_OPTIONS = {
+    waypoints = "show_waypoints",
     delays = "show_delays",
     timers = "show_timers",
     counters = "show_counters",
@@ -110,14 +112,18 @@ end
 function Net:_describe(tracker)
     if tracker.kind == "timer" then
         return pack("T", tracker.id, tracker.category, tracker.label, tracker.text_id, number(tracker.time), number(tracker.total),
-            tracker.paused and 1 or 0, position_string(tracker.position), tracker.color, number(tracker.keep))
+            tracker.paused and 1 or 0, position_string(tracker.position), tracker.color, number(tracker.keep), tracker.unit_id, tracker.unit_sync, tracker.icon)
     end
 
-    return pack("N", tracker.id, tracker.category, tracker.label, tracker.text_id, tracker.current, tracker.max, tracker.color)
+    if tracker.kind == "info" then
+        return pack("M", tracker.id, tracker.category, tracker.label, tracker.text_id, tracker.icon, position_string(tracker.position))
+    end
+
+    return pack("N", tracker.id, tracker.category, tracker.label, tracker.text_id, tracker.current, tracker.max, tracker.color, tracker.icon)
 end
 
 function Net:OnAdd(tracker)
-    if next(self.peers) and self:Syncs(tracker) and tracker.kind ~= "info" then
+    if next(self.peers) and self:Syncs(tracker) then
         self:Send(self:_describe(tracker))
     end
 end
@@ -155,7 +161,7 @@ end
 -- Everything the host shows right now, for a peer that just said hello.
 function Net:SendSnapshot(peer_id)
     for _, tracker in ipairs(ExtraRaidInfo.Trackers._list) do
-        if self:Syncs(tracker) and tracker.kind ~= "info" then
+        if self:Syncs(tracker) then
             self:SendTo(peer_id, self:_describe(tracker))
         end
     end
@@ -233,6 +239,18 @@ function Net:Apply(data)
 
     if op == "K" then
         self.acked = true
+    elseif op == "M" then
+        if not ExtraRaidInfo:GetOption(self.CATEGORY_OPTIONS.waypoints) then
+            return
+        end
+
+        trackers:AddInfo(f[2], f[5] ~= "" and ExtraRaidInfo:Localize(f[5], f[4]) or f[4], "", {
+            remote = true,
+            category = f[3],
+            text_id = f[5] ~= "" and f[5] or nil,
+            icon = f[6] ~= "" and f[6] or nil,
+            position = parse_position(f[7]),
+        })
     elseif op == "T" or op == "N" then
         local category = f[3]
         local option = self.CATEGORY_OPTIONS[category]
@@ -249,12 +267,16 @@ function Net:Apply(data)
             params.position = parse_position(f[9])
             params.color = f[10] ~= "" and f[10] or nil
             params.keep = tonumber(f[11])
+            params.unit_id = tonumber(f[12])
+            params.unit_sync = tonumber(f[13])
+            params.icon = f[14] ~= "" and f[14] or nil
 
             local tracker = trackers:AddTimer(f[2], label, tonumber(f[6]) or 0, params)
 
             tracker.total = math.max(tonumber(f[7]) or 0, 0.001)
         else
             params.color = f[8] ~= "" and f[8] or nil
+            params.icon = f[9] ~= "" and f[9] or nil
 
             trackers:AddCounter(f[2], label, tonumber(f[6]) or 0, tonumber(f[7]), params)
         end

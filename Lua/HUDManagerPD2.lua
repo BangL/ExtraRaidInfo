@@ -33,22 +33,53 @@ local function waypoint_id(tracker)
     return "extraraidinfo_" .. tostring(tracker.id)
 end
 
+-- the unit a waypoint follows (level data: waypoint_unit = editor unit id), nil if it is not there (yet)
+local function follow_unit(tracker)
+    if not tracker.unit_id then
+        return nil
+    end
+
+    local wc = managers.worldcollection
+    local ok, unit = blt.pcall(wc.get_unit_with_id, wc, tracker.unit_id, nil, tracker.unit_sync or 0)
+
+    return ok and alive(unit) and unit or nil
+end
+
 function Trackers:_add_waypoint(tracker)
-    if tracker.waypoint or tracker.kind ~= "timer" or not tracker.position or not managers.waypoints or not ExtraRaidInfo:GetOption("show_waypoints") then
+    if tracker.waypoint or tracker.kind == "counter" or not (tracker.position or tracker.unit_id) or not managers.waypoints or not ExtraRaidInfo:GetOption("show_waypoints") then
+        return
+    end
+
+    local unit = follow_unit(tracker)
+
+    if tracker.unit_id and not unit and not tracker.position then
         return
     end
 
     local id = waypoint_id(tracker)
+    local icon = tracker.icon and tweak_data.gui.icons[tracker.icon] and {
+        type = "icon",
+        show = true,
+        std_wp = tracker.icon,
+        blend_mode = "normal",
+        color = tweak_data.gui.colors.raid_gold,
+    } or nil
     local ok, err = blt.pcall(managers.waypoints.add_waypoint, managers.waypoints, id, "CustomWaypoint", {
-        position = tracker.position,
+        unit = unit,
+        position = not unit and tracker.position or nil,
         offset = Vector3(0, 0, 20),
         scale = 1.5,
         show_offscreen = true,
         color = tweak_data.gui.colors.raid_gold,
         visible_through_walls = true,
+        icon = icon,
         label = { type = "label", show = true, text = tostring(tracker.label or "") },
-        timer = { type = "timer", show = true, initial_value = tracker.time, auto_update = tracker.paused and 0 or -1 },
-        component_order = { { "label" }, { "timer" } },
+        timer = tracker.kind == "timer" and { type = "timer", show = true, initial_value = tracker.time, auto_update = tracker.paused and 0 or -1 } or nil,
+        distance = tracker.kind == "info" and { type = "distance", show = true } or nil,
+        component_order = {
+            icon and { "icon", "label" } or { "label" },
+            { tracker.kind == "timer" and "timer" or "distance" },
+        },
     }, true)
 
     if ok then
@@ -99,6 +130,9 @@ function Trackers:AddTimer(id, label, time, params)
     return add(self, id, {
         kind = "timer",
         position = params.position, -- optional world position, shown as a waypoint
+        unit_id = params.unit_id, -- or the editor id of a unit the waypoint follows (and the sync id of its mission)
+        unit_sync = params.unit_sync,
+        icon = params.icon, -- gui icon id shown left of the waypoint label
         category = params.category,
         text_id = params.text_id,
         remote = params.remote,
@@ -124,6 +158,7 @@ function Trackers:AddCounter(id, label, current, max, params)
         color = params.color,
         category = params.category,
         text_id = params.text_id,
+        icon = params.icon,
         remote = params.remote,
     })
 end
@@ -136,6 +171,11 @@ function Trackers:AddInfo(id, label, text, params)
         label = label,
         text = text,
         color = params.color,
+        position = params.position, -- shown as a waypoint, like the timers
+        category = params.category,
+        text_id = params.text_id,
+        icon = params.icon,
+        remote = params.remote,
     })
 end
 
@@ -323,13 +363,34 @@ function Trackers:_create_row(tracker)
         layer = 1,
         visible = false,
     })
+    -- optional gui icon (tweak_data.gui.icons id) in front of the label
+    local icon = tracker.icon and tweak_data.gui.icons[tracker.icon]
+    local label_x = pad
+
+    if icon then
+        local size = h - math.round(10 * self._scale)
+
+        row.icon = panel:bitmap({
+            texture = icon.texture,
+            texture_rect = icon.texture_rect,
+            x = pad,
+            y = math.round((h - size) / 2),
+            w = size,
+            h = size,
+            color = colors.raid_white,
+            alpha = 0.85,
+            layer = 2,
+        })
+        label_x = pad + size + math.round(6 * self._scale)
+    end
+
     row.label = panel:text({
         text = "",
         font = self._font,
         font_size = self._font_size,
         color = colors.raid_grey,
-        x = pad,
-        w = w - pad - 8 - 70,
+        x = label_x,
+        w = w - label_x - 8 - 70,
         h = h,
         vertical = "center",
         layer = 2,

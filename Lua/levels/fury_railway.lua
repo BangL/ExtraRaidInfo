@@ -1,9 +1,9 @@
 -- Curated trackers for fury_railway (element ids from the level's mission files).
 return {
     counters = {
-        [102159] = { text_id = "extraraidinfo_fury_railway_trains", label = "Trains emptied of gold" },
+        [102159] = { text_id = "extraraidinfo_fury_railway_trains", label = "Trains emptied of gold", icon = "waypoint_special_gold" },
     },
     timers = {
-        [100195] = { text_id = "extraraidinfo_fury_railway_t_gate", label = "Gate opens" },
+        [100195] = { text_id = "extraraidinfo_fury_railway_t_gate", label = "Gate opens", icon = "waypoint_special_door" },
     },
 }

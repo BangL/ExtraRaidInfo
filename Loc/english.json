@@ -52,5 +52,6 @@
   "extraraidinfo_tnd_escape": "Escape marker",
   "extraraidinfo_gold_rush_truck": "Truck arrives",
   "extraraidinfo_show_waypoints": "Show waypoints",
-  "extraraidinfo_show_waypoints_desc": "Show a waypoint with the countdown for delays and timers."
+  "extraraidinfo_show_waypoints_desc": "Show a waypoint with the countdown for delays and timers.",
+  "extraraidinfo_castle_radio": "Radio antenna"
 }

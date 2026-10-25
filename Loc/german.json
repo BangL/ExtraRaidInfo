@@ -52,5 +52,6 @@
   "extraraidinfo_tnd_escape": "Fluchtmarkierung",
   "extraraidinfo_gold_rush_truck": "LKW kommt an",
   "extraraidinfo_show_waypoints": "Wegpunkte anzeigen",
-  "extraraidinfo_show_waypoints_desc": "Zeigt für Verzögerungen und Timer einen Wegpunkt mit Countdown."
+  "extraraidinfo_show_waypoints_desc": "Zeigt für Verzögerungen und Timer einen Wegpunkt mit Countdown.",
+  "extraraidinfo_castle_radio": "Funkmast"
 }
