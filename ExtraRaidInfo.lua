@@ -2,7 +2,7 @@ ExtraRaidInfo = ExtraRaidInfo or {}
 
 if not ExtraRaidInfo.setup then
     ExtraRaidInfo.setup = true
-    ExtraRaidInfo.VERSION = "0.2.1"
+    ExtraRaidInfo.VERSION = "0.2.2"
     ExtraRaidInfo._path = ModPath
     ExtraRaidInfo._config_path = SavePath .. "ExtraRaidInfo.json"
     ExtraRaidInfo._config = {}
@@ -92,7 +92,8 @@ if not ExtraRaidInfo.setup then
     function ExtraRaidInfo:CurrentLevelId()
         local job = managers.raid_job and managers.raid_job:current_job()
 
-        return job and job.level_id or nil
+        -- an operation has no level of its own, the level belongs to the running event
+        return job and (job.level_id or (job.current_event_data and job.current_event_data.level_id)) or nil
     end
 
     -- Loads and caches Lua/levels/<level_id>.lua; the file returns a table (or nothing).
