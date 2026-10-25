@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "scale": 1.0,
+  "align": 3,
+  "y_pos": 0.42,
+  "background_alpha": 0.55,
+  "show_delays": true,
+  "min_delay": 10,
+  "show_timers": true,
+  "show_counters": true,
+  "show_loot": true,
+  "show_hud_timers": false,
+  "show_waypoints": true
+}

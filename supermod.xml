@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<mod name="ExtraRaidInfo"
+     description="Extra Raid Info: tracker HUD for mission timers, delayed events, counters and loot. Port of Extra Heist Info (PAYDAY 2) by Dom."
+     author="BangL"
+     version="0.1.0"
+     min_sblt_version="2.0.0"
+     priority="-50"
+     color="0 148 255">
+    <localization directory="Loc">
+        <loc file="english.json" language="english" />
+        <loc file="german.json" language="german" />
+    </localization>
+    <updates>
+        <update identifier="extraraidinfo">
+            <host meta="https://raw.githubusercontent.com/BangL/raid-mods-meta/main/extraraidinfo.json"/>
+        </update>
+    </updates>
+    <dependencies>
+        <dependency name="WaypointsLib" download_url="https://api.modworkshop.net/mods/52686/download" />
+    </dependencies>
+    <hooks>
+        <pre hook_id="lib/entry" script_path="ExtraRaidInfo.lua" />
+        <post hook_id="lib/managers/hudmanagerpd2" script_path="Lua/HUDManagerPD2.lua" />
+        <post hook_id="lib/managers/missionmanager" script_path="Lua/MissionManager.lua" />
+        <post hook_id="lib/managers/lootmanager" script_path="Lua/LootManager.lua" />
+        <post hook_id="lib/managers/raidjobmanager" script_path="Lua/RaidJobManager.lua" />
+        <post hook_id="lib/managers/menu/menucomponentmanager" script_path="Lua/MenuComponentManager.lua" />
+    </hooks>
+</mod>
