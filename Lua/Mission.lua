@@ -32,6 +32,8 @@ function Mission:Reset()
     self._data = nil
     self._seen = {}
 
+    ExtraRaidInfo.Network:Reset()
+
     if ExtraRaidInfo.Trackers then
         ExtraRaidInfo.Trackers:Clear()
     end
@@ -112,6 +114,8 @@ function Mission:OnDelay(source, target_id, delay)
     ExtraRaidInfo.Trackers:AddTimer("delay_" .. tostring(source._sync_id) .. "_" .. tostring(target_id), label, delay, {
         color = entry and entry.color,
         position = target._values.position,
+        category = "delays",
+        text_id = entry and entry.text_id,
     })
 end
 
@@ -162,7 +166,7 @@ function Mission:OnTimer(element, op)
         return
     end
 
-    trackers:AddTimer(id, label, time, { element = element })
+    trackers:AddTimer(id, label, time, { element = element, category = "timers", text_id = entry and entry.text_id })
 end
 
 -- Counters ----------------------------------------------------------------------------------
@@ -187,7 +191,7 @@ function Mission:OnCounter(element)
     local tracker = trackers:Get(id)
 
     if not tracker then
-        tracker = trackers:AddCounter(id, label, current, entry.remaining and nil or max, { color = entry.color })
+        tracker = trackers:AddCounter(id, label, current, entry.remaining and nil or max, { color = entry.color, category = "counters", text_id = entry.text_id })
         tracker.done_keep = entry.keep
     else
         trackers:SetCount(id, current)

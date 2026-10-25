@@ -85,18 +85,23 @@ local function add(self, id, tracker)
     self._by_id[id] = tracker
     table.insert(self._list, tracker)
     self:_add_waypoint(tracker)
+    ExtraRaidInfo.Network:OnAdd(tracker)
 
     return tracker
 end
 
 -- Countdown. params: element (ElementTimer, read each frame instead of counting down ourselves),
--- paused, color (gui color name)
+-- paused, color (gui color name), position (waypoint), category ("delays", "timers" or "counters": synced to
+-- the clients, see Network.lua), text_id (localization id of the label, for the clients), remote (received from the host)
 function Trackers:AddTimer(id, label, time, params)
     params = params or {}
 
     return add(self, id, {
         kind = "timer",
         position = params.position, -- optional world position, shown as a waypoint
+        category = params.category,
+        text_id = params.text_id,
+        remote = params.remote,
         label = label,
         time = time,
         total = math.max(time, 0.001),
@@ -117,6 +122,9 @@ function Trackers:AddCounter(id, label, current, max, params)
         current = current,
         max = max,
         color = params.color,
+        category = params.category,
+        text_id = params.text_id,
+        remote = params.remote,
     })
 end
 
@@ -145,6 +153,8 @@ function Trackers:SetTime(id, time, restart_total)
         if restart_total or time > tracker.total then
             tracker.total = math.max(time, 0.001)
         end
+
+        ExtraRaidInfo.Network:OnSetTime(tracker, restart_total)
     end
 end
 
@@ -153,6 +163,8 @@ function Trackers:SetPaused(id, paused)
 
     if tracker then
         tracker.paused = paused
+
+        ExtraRaidInfo.Network:OnSetPaused(tracker)
 
         if tracker.waypoint then
             blt.pcall(managers.waypoints.set_waypoint_timer, managers.waypoints, tracker.waypoint, "timer", tracker.time, paused and 0 or -1)
@@ -169,6 +181,8 @@ function Trackers:SetCount(id, current, max)
         if max then
             tracker.max = max
         end
+
+        ExtraRaidInfo.Network:OnSetCount(tracker)
     end
 end
 
@@ -178,6 +192,8 @@ function Trackers:Remove(id)
     if not tracker then
         return
     end
+
+    ExtraRaidInfo.Network:OnRemove(tracker)
 
     self._by_id[id] = nil
 
@@ -196,6 +212,8 @@ function Trackers:Remove(id)
 end
 
 function Trackers:Clear()
+    ExtraRaidInfo.Network:OnClear()
+
     for i = #self._list, 1, -1 do
         local tracker = self._list[i]
 
@@ -345,6 +363,8 @@ end
 -- Update ----------------------------------------------------------------------------------
 
 function Trackers:Update(t, dt)
+    ExtraRaidInfo:Safe(ExtraRaidInfo.Network.Tick, ExtraRaidInfo.Network, dt)
+
     local ok, err = blt.pcall(self._update, self, t, dt)
 
     if not ok and err ~= self._last_error then

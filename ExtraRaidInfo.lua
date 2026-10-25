@@ -2,7 +2,7 @@ ExtraRaidInfo = ExtraRaidInfo or {}
 
 if not ExtraRaidInfo.setup then
     ExtraRaidInfo.setup = true
-    ExtraRaidInfo.VERSION = "0.1.0"
+    ExtraRaidInfo.VERSION = "0.2.0"
     ExtraRaidInfo._path = ModPath
     ExtraRaidInfo._config_path = SavePath .. "ExtraRaidInfo.json"
     ExtraRaidInfo._config = {}
@@ -138,6 +138,7 @@ if not ExtraRaidInfo.setup then
     ExtraRaidInfo:LoadDefaults()
     ExtraRaidInfo:LoadConfig()
 
+    dofile(ExtraRaidInfo._path .. "Lua/Network.lua")
     dofile(ExtraRaidInfo._path .. "Lua/Mission.lua")
     dofile(ExtraRaidInfo._path .. "Lua/ElementHooks.lua")
 end
