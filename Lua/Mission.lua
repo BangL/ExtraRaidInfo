@@ -54,11 +54,35 @@ end
 Mission.pretty = pretty
 
 -- curated label for an element id, falling back to the pretty editor name
-function Mission:Label(kind, id, fallback)
+-- Element ids are only unique per world and per instance, the same id shows up in other parts of the level with
+-- another class. An entry may therefore name the `class` of its element and (part of) the `world` directory it is in.
+local function entry_matches(entry, element)
+    if entry.class and entry.class ~= element._ehi_class then
+        return false
+    end
+
+    if entry.world then
+        local ok, world = blt.pcall(function()
+            return element._mission_script:worlddefinition()._world_dir
+        end)
+
+        if ok and world and not tostring(world):find(entry.world, 1, true) then
+            return false
+        end
+    end
+
+    return true
+end
+
+function Mission:Label(kind, id, fallback, element)
     local entry = self:Data()[kind] and self:Data()[kind][id]
 
     if entry == false then
         return nil, true -- explicitly hidden
+    end
+
+    if type(entry) == "table" and element and not entry_matches(entry, element) then
+        entry = nil
     end
 
     if type(entry) == "table" then
@@ -86,9 +110,10 @@ local function objective_title(element)
 end
 
 -- Where the waypoint of a delay goes (level data): `waypoint = false` none, `waypoint_pos = { x, y, z }` that spot,
--- `waypoint_unit` is handled by the waypoint itself (it follows the unit), otherwise the position of the target element.
+-- `waypoint_unit` is handled by the waypoint itself (it follows the unit), otherwise (listed delays only) the position of the target element.
 function Mission:WaypointPosition(entry, target)
-    if entry and entry.waypoint == false then
+    -- auto-detected delays: the editor position of an objective element is not a place in the world (often far up in the sky)
+    if not entry or entry.waypoint == false then
         return nil
     end
 
@@ -115,7 +140,7 @@ function Mission:OnDelay(source, target_id, delay)
         return
     end
 
-    local label, hidden, entry = self:Label("delays", target_id)
+    local label, hidden, entry = self:Label("delays", target_id, nil, target)
 
     if hidden then
         return
@@ -248,7 +273,7 @@ function Mission:OnTimer(element, op)
     end
 
     -- plain timers: only the listed ones (most are logic glue); HUD timers: all, if enabled
-    local label, hidden, entry = self:Label("timers", element._id, pretty(element:editor_name()))
+    local label, hidden, entry = self:Label("timers", element._id, pretty(element:editor_name()), element)
 
     if hidden or not (entry or (is_hud and ExtraRaidInfo:GetOption("show_hud_timers"))) then
         return
@@ -265,7 +290,7 @@ function Mission:OnCounter(element, op)
         return
     end
 
-    local label, hidden, entry = self:Label("counters", element._id)
+    local label, hidden, entry = self:Label("counters", element._id, nil, element)
 
     if hidden or not entry then
         return

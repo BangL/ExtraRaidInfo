@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<mod name="ExtraRaidInfo"
+<mod name="ExtraRaidInfo" image="icon.png"
      description="Extra Raid Info: tracker HUD for mission timers, delayed events, counters and loot. Port of Extra Heist Info (PAYDAY 2) by Dom."
      author="BangL"
      version="0.2.2"

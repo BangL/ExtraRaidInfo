@@ -514,7 +514,7 @@ function Trackers:_update_row(tracker, dt)
 end
 
 function Trackers:_update(t, dt)
-    if not (self._panel and alive(self._hud.panel)) then
+    if not (alive(self._panel) and alive(self._hud.panel)) then
         managers.hud:remove_updator(UPDATE_ID)
         self._registered = nil
 
