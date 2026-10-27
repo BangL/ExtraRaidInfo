@@ -31,6 +31,10 @@ function Mission:Reset()
     self._level_id = nil
     self._data = nil
     self._seen = {}
+    self._routes = nil
+    self._route = nil
+    self._previews = nil
+    self._interactions = nil
 
     ExtraRaidInfo.Network:Reset()
 
@@ -129,8 +133,8 @@ function Mission:WaypointPosition(entry, target)
 end
 
 -- Called whenever `source` schedules `target` to execute after `delay` seconds.
-function Mission:OnDelay(source, target_id, delay)
-    if not ExtraRaidInfo:GetOption("show_delays") or delay < ExtraRaidInfo:GetOption("min_delay") or delay > 1800 then
+function Mission:OnDelay(source, target_id, delay, listed_only)
+    if not ExtraRaidInfo:GetOption("show_delays") or delay > 1800 then
         return
     end
 
@@ -142,11 +146,12 @@ function Mission:OnDelay(source, target_id, delay)
 
     local label, hidden, entry = self:Label("delays", target_id, nil, target)
 
-    if hidden then
+    -- a listed delay may name its own minimum (`min_delay`), e.g. a short delay that still matters
+    if hidden or delay < (entry and entry.min_delay or ExtraRaidInfo:GetOption("min_delay")) then
         return
     end
 
-    if not entry and not self.DELAY_AUTO_CLASSES[target._ehi_class] then
+    if not entry and (listed_only or not self.DELAY_AUTO_CLASSES[target._ehi_class]) then
         return
     end
 
@@ -232,6 +237,171 @@ function Mission:OnObjective(element)
     end
 end
 
+-- Routes ------------------------------------------------------------------------------------
+
+-- Level data `timers[id].routes = { [element id] = { label, text_id, waypoint_pos } }`: when the mission picks one of these
+-- (the element executes), that route's label and waypoint belong to the timer, e.g. where the escape vehicle arrives.
+function Mission:RouteIds()
+    if not self._routes then
+        self._routes = {}
+
+        for timer_id, entry in pairs(self:Data().timers or {}) do
+            for route_id in pairs(type(entry) == "table" and entry.routes or {}) do
+                self._routes[route_id] = timer_id
+            end
+        end
+    end
+
+    return self._routes
+end
+
+function Mission:OnRoute(element)
+    local timer_id = self:RouteIds()[element._id]
+    local entry = timer_id and self:Data().timers[timer_id]
+    local route = entry and entry.routes[element._id]
+
+    if not route then
+        return
+    end
+
+    self._route = { timer_id = timer_id, route = route }
+
+    -- the timer is already running: show it again with the route (the sync to the clients is a plain remove and add)
+    local timer = element:get_mission_element(timer_id)
+    local trackers = ExtraRaidInfo.Trackers
+    local id = timer and self:TimerId(timer)
+    local tracker = id and trackers:Get(id)
+
+    if tracker then
+        trackers:AddTimer(id, ExtraRaidInfo:Localize(route.text_id, route.label) or route.label, tracker.time, {
+            element = tracker.element,
+            category = "timers",
+            text_id = route.text_id,
+            icon = route.icon or entry.icon or "waypoint_special_wait",
+            position = route.waypoint_pos and Vector3(unpack(route.waypoint_pos)) or nil,
+        })
+    end
+end
+
+-- Previews ----------------------------------------------------------------------------------
+
+-- Level data `previews = { { id, position = { x, y, z }, start = <element id>, stop = { element ids }, states = { { id, label, text_id, icon } } } }`:
+-- decided before it happens what comes where (the convoy lanes of convoy). When `start` executes, the first state whose
+-- element is enabled (or, with `counter = n`, is a counter that stands at n) gives the label of a waypoint at `position`; it goes away when one of `stop` executes.
+function Mission:PreviewIds()
+    if not self._previews then
+        self._previews = {}
+
+        for _, preview in ipairs(self:Data().previews or {}) do
+            self._previews[preview.start] = self._previews[preview.start] or {}
+            table.insert(self._previews[preview.start], { preview = preview, show = true })
+
+            for _, stop in ipairs(preview.stop or {}) do
+                self._previews[stop] = self._previews[stop] or {}
+                table.insert(self._previews[stop], { preview = preview, show = false })
+            end
+        end
+    end
+
+    return self._previews
+end
+
+function Mission:OnPreview(element)
+    if not ExtraRaidInfo:GetOption("show_waypoints") then
+        return
+    end
+
+    for _, entry in ipairs(self:PreviewIds()[element._id] or {}) do
+        local preview = entry.preview
+        local id = "preview_" .. tostring(element._sync_id or 0) .. "_" .. tostring(preview.id)
+
+        if not entry.show then
+            ExtraRaidInfo.Trackers:Remove(id)
+        else
+            for _, state in ipairs(preview.states or {}) do
+                local target = element:get_mission_element(state.id)
+
+                -- a state is either an enabled element or a counter that was set to `counter` (the bunker choice of flakturm)
+                local match = target and (state.counter ~= nil and target._values.counter_target == state.counter or state.counter == nil and target._values.enabled)
+
+                if match then
+                    ExtraRaidInfo.Trackers:AddInfo(id, ExtraRaidInfo:Localize(state.text_id, state.label) or state.label, "", {
+                        position = Vector3(unpack(preview.position)),
+                        waypoint_only = true,
+                        category = "waypoints",
+                        text_id = state.text_id,
+                        icon = state.icon,
+                    })
+
+                    break
+                end
+            end
+        end
+    end
+end
+
+-- Interactions ------------------------------------------------------------------------------
+
+-- Level data `interactions = { { tweak = "<interaction tweak id>", label, text_id, icon, offset = z } }`: a waypoint on every unit
+-- with that interaction as long as it can still be used (the trucks to open in forest_gumpy). Local only, nothing is synced.
+function Mission:UpdateInteractions(t)
+    if t < (self._interaction_t or 0) then
+        return
+    end
+
+    self._interaction_t = t + 0.5
+
+    local list = self:Data().interactions
+    local trackers = ExtraRaidInfo.Trackers
+
+    self._interactions = self._interactions or {}
+
+    if not list or not ExtraRaidInfo:GetOption("show_waypoints") then
+        for id in pairs(self._interactions) do
+            trackers:Remove(id)
+        end
+
+        self._interactions = {}
+
+        return
+    end
+
+    local seen = {}
+
+    for _, unit in ipairs(managers.interaction._interactive_units or {}) do
+        local interaction = alive(unit) and unit:interaction()
+
+        if interaction then
+            for _, entry in ipairs(list) do
+                if interaction.tweak_data == entry.tweak then
+                    local id = "interaction_" .. tostring(unit:key())
+
+                    if interaction:active() then
+                        seen[id] = true
+
+                        if not trackers:Get(id) then
+                            trackers:AddInfo(id, ExtraRaidInfo:Localize(entry.text_id, entry.label) or entry.label, "", {
+                                position = unit:position() + Vector3(0, 0, entry.offset or 100),
+                                waypoint_only = true,
+                                icon = entry.icon,
+                            })
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    -- used up or gone
+    for id in pairs(self._interactions) do
+        if not seen[id] then
+            trackers:Remove(id)
+        end
+    end
+
+    self._interactions = seen
+end
+
 -- Timers ------------------------------------------------------------------------------------
 
 function Mission:TimerId(element)
@@ -279,7 +449,19 @@ function Mission:OnTimer(element, op)
         return
     end
 
-    trackers:AddTimer(id, label, time, { element = element, category = "timers", text_id = entry and entry.text_id, icon = entry and entry.icon or "waypoint_special_wait" })
+    local route = entry and entry.routes and self._route and self._route.timer_id == element._id and self._route.route
+
+    if route then
+        label = ExtraRaidInfo:Localize(route.text_id, route.label) or route.label
+    end
+
+    trackers:AddTimer(id, label, time, {
+        element = element,
+        category = "timers",
+        text_id = route and route.text_id or entry and entry.text_id,
+        icon = route and route.icon or entry and entry.icon or "waypoint_special_wait",
+        position = route and route.waypoint_pos and Vector3(unpack(route.waypoint_pos)) or nil,
+    })
 end
 
 -- Counters ----------------------------------------------------------------------------------

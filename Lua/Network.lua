@@ -116,7 +116,7 @@ function Net:_describe(tracker)
     end
 
     if tracker.kind == "info" then
-        return pack("M", tracker.id, tracker.category, tracker.label, tracker.text_id, tracker.icon, position_string(tracker.position))
+        return pack("M", tracker.id, tracker.category, tracker.label, tracker.text_id, tracker.icon, position_string(tracker.position), tracker.waypoint_only and 1 or 0)
     end
 
     return pack("N", tracker.id, tracker.category, tracker.label, tracker.text_id, tracker.current, tracker.max, tracker.color, tracker.icon)
@@ -250,6 +250,7 @@ function Net:Apply(data)
             text_id = f[5] ~= "" and f[5] or nil,
             icon = f[6] ~= "" and f[6] or nil,
             position = parse_position(f[7]),
+            waypoint_only = f[8] == "1",
         })
     elseif op == "T" or op == "N" then
         local category = f[3]

@@ -25,12 +25,18 @@ a client only sees the loot tracker.
 return {
     counters = { [700135] = { text_id = "extraraidinfo_flakturm_shells", label = "Shells loaded" } },
     timers   = { [100195] = { text_id = "...", label = "Gate opens" } },
-    delays   = { [100018] = false, [100019] = { label = "Truck arrives", waypoint = false } }, -- optional per entry: class = "ElementTimer" and world = "<part of the world directory>" (ids repeat in other parts of a level); false hides a delay, waypoint = false: no waypoint, waypoint_pos = { x, y, z }: the waypoint goes there, waypoint_unit = <editor unit id>: it follows that unit, icon = <gui icon id>: icon next to the label
+    delays   = { [100018] = false, [100019] = { label = "Truck arrives", waypoint = false } }, -- optional per entry: class = "ElementTimer" and world = "<part of the world directory>" (ids repeat in other parts of a level); false hides a delay, min_delay = <seconds>: shorter delays are shown too (default: the option), waypoint = false: no waypoint, waypoint_pos = { x, y, z }: the waypoint goes there, waypoint_unit = <editor unit id>: it follows that unit, icon = <gui icon id>: icon next to the label
 }
 ```
 
 The element ids come from the level's `*.mission` files (extracted to `extracted/levels/`). Labels are looked up
 via `text_id` in `Loc/*.json`, `label` is the fallback.
+
+`interactions = { { tweak = "<interaction id>", label, text_id, icon, offset } }` puts a local waypoint on every unit whose interaction is still usable (forest_gumpy: the trucks to open).
+
+`previews = { { id, position = { x, y, z }, start = <element id>, stop = { element ids }, states = { { id, label, text_id, icon } } } }`
+shows a waypoint (no row in the list) for something the mission decided beforehand: when `start` executes, the first state whose element is enabled labels it
+(convoy: which vehicle drives in at which mine spot); it goes away when one of `stop` executes.
 
 ## Options
 

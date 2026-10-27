@@ -66,6 +66,25 @@ function ElementHooks:Install()
         end)
     end
 
+    -- level data routes: which of several alternatives the mission picks
+    wrap(script_element, "on_executed", function(original)
+        return function(self, ...)
+            if Network:is_server() and self._values and self._values.enabled then
+                local mission = ExtraRaidInfo.Mission
+
+                if mission:RouteIds()[self._id] then
+                    report(mission.OnRoute, self)
+                end
+
+                if mission:PreviewIds()[self._id] then
+                    report(mission.OnPreview, self)
+                end
+            end
+
+            return original(self, ...)
+        end
+    end)
+
     -- every delayed execution of a follow-up element goes through here
     wrap(script_element, "_calc_element_delay", function(original)
         return function(self, params)
@@ -73,6 +92,19 @@ function ElementHooks:Install()
 
             if delay and delay > 0 and Network:is_server() then
                 report(ExtraRaidInfo.Mission.OnDelay, self, params.id, delay)
+            end
+
+            return delay
+        end
+    end)
+
+    -- the element's own delay before it executes (base_delay): only the listed ones (level data), the auto detection is for follow-up delays
+    wrap(script_element, "_calc_base_delay", function(original)
+        return function(self, ...)
+            local delay = original(self, ...)
+
+            if delay and delay > 0 and Network:is_server() then
+                report(ExtraRaidInfo.Mission.OnDelay, self, self._id, delay, true)
             end
 
             return delay

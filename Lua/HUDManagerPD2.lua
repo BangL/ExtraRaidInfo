@@ -172,6 +172,7 @@ function Trackers:AddInfo(id, label, text, params)
         text = text,
         color = params.color,
         position = params.position, -- shown as a waypoint, like the timers
+        waypoint_only = params.waypoint_only, -- no row in the list, only the waypoint
         category = params.category,
         text_id = params.text_id,
         icon = params.icon,
@@ -529,6 +530,8 @@ function Trackers:_update(t, dt)
         return
     end
 
+    ExtraRaidInfo:Safe(ExtraRaidInfo.Mission.UpdateInteractions, ExtraRaidInfo.Mission, t)
+
     -- update trackers, drop the finished ones
     for i = #self._list, 1, -1 do
         local tracker = self._list[i]
@@ -542,18 +545,20 @@ function Trackers:_update(t, dt)
     local y = 0
 
     for _, tracker in ipairs(self._list) do
-        if not tracker.row then
-            self:_create_row(tracker)
+        if not tracker.waypoint_only then
+            if not tracker.row then
+                self:_create_row(tracker)
+            end
+
+            local row = tracker.row
+
+            tracker.alpha = math.min(1, tracker.alpha + dt * FADE_SPEED)
+            row.panel:set_alpha(tracker.alpha)
+            row.panel:set_y(y)
+            self:_update_row(tracker, dt)
+
+            y = y + self._row_h + GAP
         end
-
-        local row = tracker.row
-
-        tracker.alpha = math.min(1, tracker.alpha + dt * FADE_SPEED)
-        row.panel:set_alpha(tracker.alpha)
-        row.panel:set_y(y)
-        self:_update_row(tracker, dt)
-
-        y = y + self._row_h + GAP
     end
 
     self._panel:set_h(math.max(1, y))
