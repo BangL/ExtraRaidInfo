@@ -5,7 +5,8 @@ Hooks:PostHook(LootManager, "sync_secure_loot", "ExtraRaidInfo_LootManager_post_
     end
 
     local trackers = ExtraRaidInfo.Trackers
-    local count = #self:get_secured()
+    -- not get_secured(): that removes and returns the first entry
+    local count = #self._global.secured
 
     if count <= 0 then
         return
