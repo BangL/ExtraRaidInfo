@@ -96,6 +96,12 @@ if not ExtraRaidInfo.setup then
         return job and (job.level_id or (job.current_event_data and job.current_event_data.level_id)) or nil
     end
 
+    function ExtraRaidInfo:IsOperation()
+        local job = managers.raid_job and managers.raid_job:current_job()
+
+        return job ~= nil and job.job_type == OperationsTweakData.JOB_TYPE_OPERATION
+    end
+
     -- Loads and caches Lua/levels/<level_id>.lua; the file returns a table (or nothing).
     function ExtraRaidInfo:GetLevelData(level_id)
         if not level_id then

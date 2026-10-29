@@ -112,7 +112,7 @@ end
 function Net:_describe(tracker)
     if tracker.kind == "timer" then
         return pack("T", tracker.id, tracker.category, tracker.label, tracker.text_id, number(tracker.time), number(tracker.total),
-            tracker.paused and 1 or 0, position_string(tracker.position), tracker.color, number(tracker.keep), tracker.unit_id, tracker.unit_sync, tracker.icon)
+            tracker.paused and 1 or 0, position_string(tracker.position), tracker.color, number(tracker.keep), tracker.unit_id, tracker.unit_sync, tracker.icon, tracker.hide_paused and 1 or 0)
     end
 
     if tracker.kind == "info" then
@@ -271,6 +271,7 @@ function Net:Apply(data)
             params.unit_id = tonumber(f[12])
             params.unit_sync = tonumber(f[13])
             params.icon = f[14] ~= "" and f[14] or nil
+            params.hide_paused = f[15] == "1"
 
             local tracker = trackers:AddTimer(f[2], label, tonumber(f[6]) or 0, params)
 

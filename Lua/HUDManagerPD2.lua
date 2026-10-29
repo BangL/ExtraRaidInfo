@@ -140,6 +140,7 @@ function Trackers:AddTimer(id, label, time, params)
         time = time,
         total = math.max(time, 0.001),
         paused = params.paused,
+        hide_paused = params.hide_paused, -- no row while paused (the level pauses it until the player fixes something)
         element = params.element,
         color = params.color,
         keep = params.keep, -- seconds to keep showing 0:00 after finishing
@@ -545,7 +546,13 @@ function Trackers:_update(t, dt)
     local y = 0
 
     for _, tracker in ipairs(self._list) do
-        if not tracker.waypoint_only then
+        local hidden = tracker.hide_paused and tracker.paused
+
+        if tracker.row then
+            tracker.row.panel:set_visible(not hidden)
+        end
+
+        if not tracker.waypoint_only and not hidden then
             if not tracker.row then
                 self:_create_row(tracker)
             end

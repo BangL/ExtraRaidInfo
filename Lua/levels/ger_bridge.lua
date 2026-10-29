@@ -20,19 +20,20 @@ return {
         },
     },
     -- Which of the two bridge pillars is blown (instance ger_bridge_dual_arch_001 / _002 = logic_link_destroy_dual_arch_1 / _2) is decided at the
-    -- start of the mission (logic_random_001): the link of the chosen one is enabled. Shown from the "plant the dynamite" objective until the blast.
+    -- start of the mission (logic_random_001, ~2.5 s in): the link of the chosen one is enabled. Shown from reaching the top of the bridge
+    -- (logic_link_player_on_the_bridge, before the dynamite objective; expo skips that one) until the blast.
     previews = {
         {
             id = "pillar_1",
             position = { 129.65, 2140.63, -550.61 },
-            start = 103958, -- obj_plant_dynamite
+            start = 100401, -- logic_link_player_on_the_bridge
             stop = { 100636 }, -- detonate_arches
             states = { { id = 100097, text_id = "extraraidinfo_ger_bridge_pillar", label = "Blow this pillar", icon = "waypoint_special_dynamite_stick" } },
         },
         {
             id = "pillar_2",
             position = { 129.65, -2734.37, -550.61 },
-            start = 103958,
+            start = 100401,
             stop = { 100636 },
             states = { { id = 100105, text_id = "extraraidinfo_ger_bridge_pillar", label = "Blow this pillar", icon = "waypoint_special_dynamite_stick" } },
         },

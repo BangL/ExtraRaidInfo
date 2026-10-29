@@ -139,7 +139,7 @@ Hooks:Add("MenuComponentManagerInitialize", "ExtraRaidInfo_MenuComponentManagerI
 		name = "extraraidinfo_options",
 		name_id = "extraraidinfo_title",
 		inject_list = "blt_options",
-		icon = "waypoint_special_loot",
+		icon = "waypoint_special_wait",
 		class = ExtraRaidInfoMenu,
 	})
 end)

@@ -60,8 +60,13 @@ Mission.pretty = pretty
 -- curated label for an element id, falling back to the pretty editor name
 -- Element ids are only unique per world and per instance, the same id shows up in other parts of the level with
 -- another class. An entry may therefore name the `class` of its element and (part of) the `world` directory it is in.
+-- `raid_only` / `operation_only`: the element is used by both, the tracker belongs to one of them.
 local function entry_matches(entry, element)
     if entry.class and entry.class ~= element._ehi_class then
+        return false
+    end
+
+    if entry.raid_only and ExtraRaidInfo:IsOperation() or entry.operation_only and not ExtraRaidInfo:IsOperation() then
         return false
     end
 
@@ -459,6 +464,7 @@ function Mission:OnTimer(element, op)
         element = element,
         category = "timers",
         text_id = route and route.text_id or entry and entry.text_id,
+        hide_paused = entry and entry.hide_paused,
         icon = route and route.icon or entry and entry.icon or "waypoint_special_wait",
         position = route and route.waypoint_pos and Vector3(unpack(route.waypoint_pos)) or nil,
     })
