@@ -13,8 +13,6 @@
   "extraraidinfo_min_delay_desc": "Kürzere Verzögerungen und Timer werden nicht angezeigt.",
   "extraraidinfo_show_timers": "Missions-Timer",
   "extraraidinfo_show_timers_desc": "Countdown für Missions-Timer. Funktioniert nur als Host oder im Singleplayer.",
-  "extraraidinfo_show_hud_timers": "HUD-Timer auch anzeigen",
-  "extraraidinfo_show_hud_timers_desc": "Auch die Timer auflisten, die das Spiel schon als Zieltimer anzeigt.",
   "extraraidinfo_show_counters": "Fortschrittszähler",
   "extraraidinfo_show_counters_desc": "Fortschritt von Missionszielen (zerstörte Ziele, gesammelte Gegenstände, ...) bei Missionen, für die es welche gibt.",
   "extraraidinfo_show_loot": "Beutezähler",

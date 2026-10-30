@@ -284,6 +284,7 @@ function Mission:OnRoute(element)
             text_id = route.text_id,
             icon = route.icon or entry.icon or "waypoint_special_wait",
             position = route.waypoint_pos and Vector3(unpack(route.waypoint_pos)) or nil,
+            waypoint_only = tracker.waypoint_only,
         })
     end
 end
@@ -447,10 +448,10 @@ function Mission:OnTimer(element, op)
         return
     end
 
-    -- plain timers: only the listed ones (most are logic glue); HUD timers: all, if enabled
+    -- only the listed timers (most are logic glue); the game shows HUD timers itself, so they only get their waypoint
     local label, hidden, entry = self:Label("timers", element._id, pretty(element:editor_name()), element)
 
-    if hidden or not (entry or (is_hud and ExtraRaidInfo:GetOption("show_hud_timers"))) then
+    if hidden or not entry then
         return
     end
 
@@ -465,6 +466,7 @@ function Mission:OnTimer(element, op)
         category = "timers",
         text_id = route and route.text_id or entry and entry.text_id,
         hide_paused = entry and entry.hide_paused,
+        waypoint_only = is_hud,
         icon = route and route.icon or entry and entry.icon or "waypoint_special_wait",
         position = route and route.waypoint_pos and Vector3(unpack(route.waypoint_pos)) or nil,
     })

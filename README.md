@@ -5,7 +5,7 @@ Port of **Extra Heist Info** (PAYDAY 2, by Dom - https://modworkshop.net/mod/319
 A tracker list on the HUD for what the mission script is doing behind the scenes:
 
 - **Delayed events** - countdown for things the mission triggers after a delay (objectives, sequences, ...), detected generically in every raid.
-- **Timers** - mission timers (`ElementTimer`), the ones listed per level; optionally the HUD timers the game already shows.
+- **Timers** - mission timers (`ElementTimer`), the ones listed per level. Listed HUD timers (`ElementTimerHud`) only get their waypoint (the game shows the timer itself).
 - **Progress counters** - destroyed targets, collected items, ... for the raids that have them listed.
 - **Loot** - loot secured this mission.
 

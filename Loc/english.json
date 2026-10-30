@@ -13,8 +13,6 @@
   "extraraidinfo_min_delay_desc": "Delays and timers shorter than this are not shown.",
   "extraraidinfo_show_timers": "Mission timers",
   "extraraidinfo_show_timers_desc": "Countdown for mission timers. Only works as host or in singleplayer.",
-  "extraraidinfo_show_hud_timers": "Also show HUD timers",
-  "extraraidinfo_show_hud_timers_desc": "Also list the timers the game already shows as objective timer.",
   "extraraidinfo_show_counters": "Progress counters",
   "extraraidinfo_show_counters_desc": "Progress of mission goals (destroyed targets, collected items, ...) on missions that have them listed.",
   "extraraidinfo_show_loot": "Loot counter",
