@@ -291,8 +291,9 @@ end
 -- Layout ----------------------------------------------------------------------------------
 
 function Trackers:Create(hud)
-    if self._panel and self._panel_parent then
-        blt.pcall(self._panel_parent.remove, self._panel_parent, self._panel)
+    -- blt.pcall does not catch engine access violations: only touch live gui objects
+    if alive(self._panel) and alive(self._panel_parent) then
+        self._panel_parent:remove(self._panel)
     end
 
     -- rows of the old panel are gone with it
@@ -327,7 +328,7 @@ function Trackers:Create(hud)
 end
 
 function Trackers:Recreate()
-    if self._hud and self._hud.panel then
+    if self._hud and alive(self._hud.panel) then
         self:Create(self._hud)
     end
 end
@@ -418,8 +419,8 @@ function Trackers:_destroy_row(tracker)
 
     tracker.row = nil
 
-    if row and self._panel then
-        blt.pcall(self._panel.remove, self._panel, row.panel)
+    if row and alive(self._panel) and alive(row.panel) then
+        self._panel:remove(row.panel)
     end
 end
 

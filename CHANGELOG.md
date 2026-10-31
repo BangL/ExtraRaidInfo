@@ -1,3 +1,6 @@
+0.4.2:
+- fix: no HUD calls on destroyed panels while the game shuts down
+
 0.4.1:
 - HUD timers get only their own waypoint
 - removed the show_hud_timers option
