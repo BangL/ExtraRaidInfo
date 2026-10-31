@@ -12,7 +12,7 @@
     </localization>
     <updates>
         <update identifier="extraraidinfo">
-            <host meta="https://raw.githubusercontent.com/BangL/raid-mods-meta/main/extraraidinfo.json"/>
+            <host meta="https://raw.githubusercontent.com/BangL/raid-mods-meta/main/extraraidinfo.json" patchnotes="https://github.com/BangL/ExtraRaidInfo/blob/master/CHANGELOG.md"/>
         </update>
     </updates>
     <dependencies>
